@@ -7,6 +7,12 @@ def vectorize_features(feature_dict):
     """
     vector = [feature_dict.get(f, 0) for f in FEATURE_SCHEMA]
 
-    assert len(vector) == 86, f"Feature vector size mismatch: {len(vector)}"
+    assert len(vector) == len(FEATURE_SCHEMA), \
+    f"Feature vector size mismatch: {len(vector)} vs {len(FEATURE_SCHEMA)}"
 
     return vector
+
+def debug_vector(vector):
+    for name, value in zip(FEATURE_SCHEMA, vector):
+        print(f"{name}: {value}")
+

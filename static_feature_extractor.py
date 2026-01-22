@@ -152,16 +152,25 @@ DROP_GROUPS = {
 # =============================
 
 def extract_features_from_binary(filepath):
-    if not filepath.lower().endswith(SUPPORTED_EXTENSIONS):
-        raise ValueError("Unsupported file type")
+    # --- PE magic check ---
+    try:
+        with open(filepath, "rb") as f:
+            magic = f.read(2)
+    except Exception as e:
+        raise ValueError(f"Cannot read file: {filepath} ({e})")
+
+    if magic != b"MZ":
+        ext = os.path.splitext(filepath)[1].lower()
+        raise ValueError(f"Not a PE file: {filepath} (ext={ext})")
 
     features = defaultdict(int)
+
 
     # ---- RAW BINARY ----
     with open(filepath, "rb") as f:
         data = f.read()
 
-    features["FILE_SIZE"] = len(data)
+    #features["FILE_SIZE"] = len(data)
     features["FILE_ENTROPY"] = shannon_entropy(data)
 
     strings = extract_strings(filepath)
@@ -176,7 +185,7 @@ def extract_features_from_binary(filepath):
     if pe:
         imports = extract_imports(pe)
         imports_lower = [i.lower() for i in imports]
-
+        features["NUM_IMPORTS"] = len(imports)
         for fname, apis in API_GROUPS.items():
             features[fname] = int(any(
                 api.lower() in imp
@@ -185,7 +194,7 @@ def extract_features_from_binary(filepath):
             ))
 
         sections = pe.sections
-        features["NUM_SECTIONS"] = len(sections)
+        #features["NUM_SECTIONS"] = len(sections)
         features["AVG_SECTION_ENTROPY"] = (
             sum(s.get_entropy() for s in sections) / max(1, len(sections))
         )
@@ -195,9 +204,11 @@ def extract_features_from_binary(filepath):
 
     else:
         # ---- BIN fallback (safe defaults) ----
-        features["NUM_SECTIONS"] = 0
+        #features["NUM_SECTIONS"] = 0
         features["AVG_SECTION_ENTROPY"] = 0.0
         features["HAS_HIGH_ENTROPY_SECTION"] = int(features["FILE_ENTROPY"] > 7.5)
+        features["NUM_IMPORTS"] = 0
+
 
     # ---- Registry heuristics ----
     features["REG_AUTORUN_MOD"] = int("run\\" in joined)
@@ -211,7 +222,7 @@ def extract_features_from_binary(filepath):
     features["REG_CLSID_ACTIVITY"] = int("clsid" in joined)
     features["REG_FILE_ASSOC_CHANGE"] = int(".exe\\" in joined)
     features["REG_SECURITY_POLICY"] = int("safeboot" in joined)
-    features["REG_USER_PROFILE_MOD"] = int("current_user" in joined)
+    features["REG_USER_PROFILE_MOD"] = int("current_uaser" in joined)
 
     # ---- Anomaly flags ----
     features["ANOMALY_INDICATOR"] = int(features["FILE_ENTROPY"] > 7.5)

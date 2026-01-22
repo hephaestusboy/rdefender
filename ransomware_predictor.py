@@ -1,74 +1,58 @@
+# ransomware_predictor.py
+
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import f1_score
+# from sklearn.ensemble import RandomForestClassifier
+from tqdm import tqdm
 from static_feature_extractor import extract_features_from_binary
 from feature_vectorizer import vectorize_features
-from feature_schema import FEATURE_SCHEMA
 
-# Indices of critical features in schema
-CRITICAL_FEATURES = {
-    "API_CRYPTO_CONTEXT",
-    "API_CRYPTO_HASH",
-    "API_CRYPTO_ENCRYPT",
-    "API_FILE_READ",
-    "API_FILE_WRITE",
-    "API_FILE_DELETE",
-    "API_FILE_RENAME",
-    "API_DIRECTORY_ENUM",
-    "API_DEBUG_DETECTION",
-    "API_DELAY_EXECUTION",
-    "API_SOCKET_CONNECT",
-    "API_HTTP_REQUEST",
-    "DROP_ENCRYPTED_EXTENSIONS",
-    "DROP_RANDOM_NAMED_FILES",
-    "REG_KEY_CREATE",
-    "REG_VALUE_SET",
-    "REG_SERVICE_CREATE_DELETE",
-}
 
-def predict_ransomware(features):
-    vector = vectorize_features(features)
+def build_dataset(malware_files, benign_files):
+    X, y = [], []
 
-    # sanity check
-    assert len(vector) == 86
+    for path in malware_files:
+        feats = extract_features_from_binary(path)
+        vec = vectorize_features(feats)
+        X.append(vec)
+        y.append(1)
 
-    critical_score = sum(
-        features.get(f, 0) for f in CRITICAL_FEATURES
+    for path in benign_files:
+        feats = extract_features_from_binary(path)
+        vec = vectorize_features(feats)
+        X.append(vec)
+        y.append(0)
+
+    return np.array(X), np.array(y)
+
+
+def train_random_forest(X, y):
+    """
+    Train Random Forest with progress indicator.
+    """
+
+    n_trees = 100  # keep small for now
+
+    model = RandomForestClassifier(
+        n_estimators=1,        # start with 1 tree
+        warm_start=True,       # allow incremental growth
+        class_weight="balanced",
+        n_jobs=-1,
+        random_state=42
     )
 
-    secondary_score = sum(vector) - critical_score
+    print("Training Random Forest...")
+    for i in tqdm(range(1, n_trees + 1), desc="Training progress", unit="tree"):
+        model.n_estimators = i
+        model.fit(X, y)
 
-    score = (2 * critical_score) + secondary_score
-
-    if score >= 18:
-        label = 1
-        confidence = min(0.99, 0.7 + score / 40)
-    elif score >= 12:
-        label = 1
-        confidence = min(0.95, 0.6 + score / 40)
-    else:
-        label = 0
-        confidence = max(0.05, 0.5 - score / 40)
-
-    return label, round(confidence, 2), score
+    print("Training completed")
+    return model
 
 
-def analyze_file(filepath):
-    features = extract_features_from_binary(filepath)
-
-    vector = vectorize_features(features)
-    print(f"✔ Extracted feature count: {len(vector)} (EXPECTED: 86)")
-
-    label, confidence, score = predict_ransomware(features)
-
-    verdict = "RANSOMWARE" if label == 1 else "BENIGN"
-
-    print("\n===== RANSOMWARE ANALYSIS =====")
-    print(f"File       : {filepath}")
-    print(f"Verdict    : {verdict}")
-    print(f"Confidence : {confidence}")
-    print(f"Risk Score : {score}")
-    print("================================\n")
-
-    return label, confidence, score
-
-
-if __name__ == "__main__":
-    analyze_file("1mb.exe")
+def predict_file(model, filepath):
+    feats = extract_features_from_binary(filepath)
+    vec = vectorize_features(feats)
+    return model.predict([vec])[0]

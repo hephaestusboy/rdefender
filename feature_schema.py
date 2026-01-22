@@ -1,4 +1,12 @@
 FEATURE_SCHEMA = [
+    # --- A1. Numeric
+    #"FILE_SIZE",
+    "FILE_ENTROPY",
+    #"NUM_SECTIONS",
+    "NUM_IMPORTS",
+    "AVG_SECTION_ENTROPY",
+    "HAS_HIGH_ENTROPY_SECTION",
+    
     # --- A. Process, Memory & Execution (18) ---
     "API_PROC_CREATE",
     "API_PROC_TERMINATE",

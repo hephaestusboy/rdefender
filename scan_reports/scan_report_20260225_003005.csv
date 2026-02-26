@@ -1,0 +1,12 @@
+File_Path,Verdict,Confidence_Score_or_Error
+samples/ransomware 22/Gas.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/FreeYoutubeDownloader.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/FlashKiller.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/DesktopPuzzle.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/ColorBug.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/ClassicShell.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/BlueScreen.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/ArcticBomb.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/Ana.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/Alerta.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."
+samples/ransomware 22/000.exe,ERROR,"ValueError: X has 28 features, but StandardScaler is expecting 12 features as input."

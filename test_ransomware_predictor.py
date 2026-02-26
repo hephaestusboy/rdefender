@@ -101,10 +101,10 @@ if __name__ == "__main__":
 
 
     # Step 1: SMOTE (balance)
-    X, y = apply_smote(X, y)
+    # X, y = apply_smote(X, y)
 
     # Step 2: MixUp (generalization)
-    X, y = apply_mixup(X, y, alpha=0.3)
+    # X, y = apply_mixup(X, y, alpha=0.3)
 
     model = train_random_forest(X, y)
 

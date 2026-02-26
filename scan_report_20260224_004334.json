@@ -1,0 +1,12 @@
+{
+    "scan_info": {
+        "target": "/home/heph/Documents/code/ransom/new/mb_dataset/samples/",
+        "timestamp": "20260224_004334",
+        "total_files": 2037,
+        "threat_count": 1973
+    },
+    "results": [
+        {
+            "file": "/home/heph/Documents/code/ransom/new/mb_dataset/samples/0665b7edb08806e5a0666a6888dcab0fabc8b54c89fd0be24100c7e93131be95.exe",
+            "verdict": "MALWARE",
+            "confidence": 

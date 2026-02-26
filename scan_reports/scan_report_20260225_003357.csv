@@ -1,0 +1,12 @@
+File_Path,Verdict,Score_or_Error
+samples/ransomware 22/Gas.exe,MALWARE,0.9356
+samples/ransomware 22/FreeYoutubeDownloader.exe,MALWARE,0.976
+samples/ransomware 22/FlashKiller.exe,MALWARE,0.9886
+samples/ransomware 22/DesktopPuzzle.exe,MALWARE,0.9985
+samples/ransomware 22/ColorBug.exe,MALWARE,0.9686
+samples/ransomware 22/ClassicShell.exe,MALWARE,0.9912
+samples/ransomware 22/BlueScreen.exe,MALWARE,0.9996
+samples/ransomware 22/ArcticBomb.exe,MALWARE,0.9995
+samples/ransomware 22/Ana.exe,MALWARE,0.9993
+samples/ransomware 22/Alerta.exe,MALWARE,0.9728
+samples/ransomware 22/000.exe,MALWARE,0.9105

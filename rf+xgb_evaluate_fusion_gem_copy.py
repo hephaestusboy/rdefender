@@ -7,6 +7,14 @@ from multiprocessing import Pool, cpu_count
 import joblib
 import numpy as np
 
+# --- CRITICAL CPU FIX: STOP C++ BACKEND MULTITHREADING ---
+# These MUST be set before importing numpy, joblib, or sklearn
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 # Silence background noise from joblib/sklearn
 warnings.simplefilter(action='ignore', category=UserWarning)
 os.environ["PYTHONWARNINGS"] = "ignore"
@@ -86,44 +94,6 @@ def build_fusion_features(p_rf_b, p_rf_a, p_xgb_b, p_xgb_a, raw_vec):
         raw_silver[0], raw_silver[1], raw_silver[2], raw_silver[3] # 16-19
     ]])
 
-# =============================
-# PREDICT SINGLE FILE
-# =============================
-def predict_file(models, filepath):
-    # 1. Feature Extraction
-    feats = extract_features_from_binary(filepath)
-    
-    # --- CRITICAL: DEFINE LOCAL VARIABLES ---
-    raw_shadow = feats.get("SHADOW_COPY_DELETION_STRINGS", 0)
-    raw_entropy = feats.get("FILE_ENTROPY", 0.0)
-    raw_anomaly = feats.get("VIRTUAL_RAW_SIZE_ANOMALY", 0)
-    raw_signed = feats.get("IS_SIGNATURE_VALID", 0) # Added for FP analysis
-    
-    # 2. Vectorization
-    raw_vec = vectorize_features(feats)
-    vec_np = np.array(raw_vec)
-
-    # 3. Base Model Probabilities
-    vec1 = vec_np[MODEL1_INDICES].reshape(1, -1)
-    vec2 = vec_np[MODEL2_INDICES].reshape(1, -1)
-
-    p_rf_b = models["rf_behav"].predict_proba(vec1)[0][1]
-    p_rf_a = models["rf_art"].predict_proba(vec2)[0][1]
-    p_xgb_b = models["xgb_behav"].predict_proba(vec1)[0][1]
-    p_xgb_a = models["xgb_art"].predict_proba(vec2)[0][1]
-
-    # 4. Fusion Layer (19-Feature Build)
-    fusion_input = build_fusion_features(p_rf_b, p_rf_a, p_xgb_b, p_xgb_a, raw_vec)
-    fusion_prob = models["fusion"].predict_proba(fusion_input)[0][1]
-
-    # 5. Hybrid Labeling Logic
-    # 5. Hybrid Labeling Logic
-    # 5. Native ML Classification
-    # 5. Native ML Classification
-    # 5. Native ML Classification
-    # =============================
-# PREDICT SINGLE FILE
-# =============================
 # =============================
 # PREDICT SINGLE FILE
 # =============================
@@ -219,20 +189,25 @@ def process_file_task(filepath):
 # MAIN EVALUATION
 # =============================
 if __name__ == "__main__":
-    print(f"\n🚀 Initializing Multicore Engine ({cpu_count()} cores detected)...")
+    
+    # Calculate half cores (with a fallback to 1 just in case)
+    total_cores = cpu_count()
+    half_cores = max(1, total_cores // 2)
+    
+    print(f"\n🚀 Initializing Multicore Engine (Using {half_cores} of {total_cores} detected cores)...")
     
     ransomware_files = collect_files("samples/test/ransomware")
     benign_files = collect_files("samples/test/benign")
 
     # 1. Process Ransomware
     print(f"\n🦠 Analyzing {len(ransomware_files)} Ransomware samples...")
-    with Pool(processes=cpu_count(), initializer=init_worker) as pool:
+    with Pool(processes=half_cores, initializer=init_worker) as pool:
         results_mal = list(tqdm(pool.imap(process_file_task, ransomware_files), 
                                 total=len(ransomware_files), desc="Malware", colour="red"))
 
     # 2. Process Benign
     print(f"\n🛡️  Analyzing {len(benign_files)} Benign samples...")
-    with Pool(processes=cpu_count(), initializer=init_worker) as pool:
+    with Pool(processes=half_cores, initializer=init_worker) as pool:
         results_ben = list(tqdm(pool.imap(process_file_task, benign_files), 
                                 total=len(benign_files), desc="Benign", colour="green"))
 

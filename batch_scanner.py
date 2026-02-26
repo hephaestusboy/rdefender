@@ -1,16 +1,25 @@
 import os
 import sys
 import warnings
-import joblib
-import numpy as np
 import csv
-from multiprocessing import Pool, cpu_count
-from tqdm import tqdm
 from datetime import datetime
+from multiprocessing import Pool, cpu_count
+
+# --- CRITICAL CPU FIX: STOP C++ BACKEND MULTITHREADING ---
+# These MUST be set before importing numpy, joblib, or sklearn
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 # Silence background noise
 warnings.filterwarnings("ignore", category=UserWarning)
 os.environ["PYTHONWARNINGS"] = "ignore"
+
+import joblib
+import numpy as np
+from tqdm import tqdm
 
 # User Custom Modules
 from static_feature_extractor import extract_features_from_binary
@@ -28,8 +37,8 @@ SILVER_BULLETS = [
 SILVER_INDICES = [FEATURE_SCHEMA.index(f) for f in SILVER_BULLETS]
 
 # Thresholds & Config
-MALWARE_THRESHOLD = 0.6
-SUSPICIOUS_THRESHOLD = 0.4
+MALWARE_THRESHOLD = 0.65       # Synced with your 0.979 Eval script
+SUSPICIOUS_THRESHOLD = 0.45    # Synced with your 0.979 Eval script
 SUPPORTED_EXTENSIONS = (".exe", ".dll", ".sys", ".bin")
 REPORTS_DIR = "scan_reports"
 
@@ -54,24 +63,20 @@ def build_fusion_features(p_rf_b, p_rf_a, p_xgb_b, p_xgb_a, raw_vec):
     """
     probs = np.array([p_rf_b, p_rf_a, p_xgb_b, p_xgb_a])
 
-    # 5-8: Statistical Meta-features
     avg_behavior = (p_rf_b + p_xgb_b) / 2
     avg_artifact = (p_rf_a + p_xgb_a) / 2
     disagreement = abs(avg_behavior - avg_artifact)
     prob_entropy = -(probs * np.log(probs + 1e-9) + (1 - probs) * np.log(1 - probs + 1e-9)).mean()
 
-    # 9-11: Stealth & Confidence Flags
     high_artifact_stealth = 1.0 if (avg_artifact > 0.7 and avg_behavior < 0.2) else 0.0
     high_behavior_stealth = 1.0 if (avg_behavior > 0.7 and avg_artifact < 0.2) else 0.0
     joint_conf = avg_artifact * avg_behavior
 
-    # 12-15: Model Diffs & Signal Range
     rf_diff = p_rf_a - p_rf_b
     xgb_diff = p_xgb_a - p_xgb_b
     max_sig = np.max(probs)
     min_sig = np.min(probs)
     
-    # 16-19: Silver Bullets (Indices must be pre-defined)
     raw_silver = np.array(raw_vec)[SILVER_INDICES]
 
     return np.array([[
@@ -87,18 +92,17 @@ def build_fusion_features(p_rf_b, p_rf_a, p_xgb_b, p_xgb_a, raw_vec):
         raw_silver[2], raw_silver[3]                 # 18-19
     ]])
 
-
-
 def worker_task(filepath):
     """The function each process core runs."""
     try:
         # 1. Feature Extraction
         feats = extract_features_from_binary(filepath)
         
-        # --- DEFINE SILVER BULLETS (Fixes Pylance UndefinedVariable) ---
+        # --- THE 0.979 F1 LOCAL VARIABLES ---
         raw_shadow = feats.get("SHADOW_COPY_DELETION_STRINGS", 0)
         raw_entropy = feats.get("FILE_ENTROPY", 0.0)
         raw_anomaly = feats.get("VIRTUAL_RAW_SIZE_ANOMALY", 0)
+        raw_signed = feats.get("IS_SIGNATURE_VALID", 0) 
         
         raw_vec = vectorize_features(feats)
         vec_np = np.array(raw_vec)
@@ -117,25 +121,34 @@ def worker_task(filepath):
         fusion_in = build_fusion_features(pb_rf, pa_rf, pb_xgb, pa_xgb, raw_vec)
         final_prob = _models["fusion"].predict_proba(fusion_in)[0][1]
 
-        # 5. Hybrid Threshold Logic
-        label = "CLEAN"
+        # 5. Native ML Classification
         if final_prob >= MALWARE_THRESHOLD: 
             label = "MALWARE"
-        elif final_prob >= SUSPICIOUS_THRESHOLD: 
-            label = "SUSPICIOUS"
+        else:
+            # --- THE PURE HEURISTIC OVERRIDES ---
+            extreme_artifact = (pa_xgb > 0.90 or pa_rf > 0.90) and ((pb_rf + pb_xgb)/2 < 0.25) and raw_signed == 0
+            consensus_suspicion = (pb_rf > 0.40 and pa_rf > 0.40 and pb_xgb > 0.40 and pa_xgb > 0.40)
             
-            # --- SURGICAL OVERRIDE ---
-            # If ML is on the fence but hard indicators fire, upgrade to Malware
-            if raw_shadow == 1 or (raw_entropy > 7.6 and raw_anomaly == 1):
+            if raw_shadow == 1 or extreme_artifact or consensus_suspicion:
                 label = "MALWARE"
-                final_prob = max(final_prob, 0.75) 
+                final_prob = max(final_prob, 0.70) 
+            elif final_prob >= SUSPICIOUS_THRESHOLD: 
+                label = "SUSPICIOUS"
+            else:
+                label = "CLEAN"
+
+        # --- THE DATA-DRIVEN DEMOTION GUARDS ---
+        if label == "MALWARE":
+            if raw_signed == 1 and final_prob < 0.98:
+                label = "SUSPICIOUS" 
+            elif raw_entropy > 7.65 and raw_shadow == 0 and final_prob < 0.95:
+                label = "SUSPICIOUS"
 
         return (filepath, label, final_prob)
+    
     except Exception as e:
         error_msg = f"{type(e).__name__}: {str(e)}"
         return (filepath, "ERROR", error_msg)
-    
-    
 
 def main():
     if len(sys.argv) < 2:
@@ -153,14 +166,18 @@ def main():
         print(f"No files found in {root_path}")
         return
 
+    # --- HALF-CORE OPTIMIZATION ---
+    total_cores = cpu_count()
+    half_cores = max(1, total_cores // 2)
+
     print(f"\n{'='*70}")
     print(f"🚀 R-DEFENDER HYBRID MULTI-CORE SCAN")
     print(f"📂 Target: {root_path}")
-    print(f"🧵 Threads: {cpu_count()}")
+    print(f"🧵 Threads: {half_cores} (Optimized from {total_cores} available)")
     print(f"{'='*70}\n")
     
-    with Pool(processes=cpu_count(), initializer=init_worker) as pool:
-        results = list(tqdm(pool.imap(worker_task, files_to_scan), total=len(files_to_scan), desc="Scanning"))
+    with Pool(processes=half_cores, initializer=init_worker) as pool:
+        results = list(tqdm(pool.imap(worker_task, files_to_scan), total=len(files_to_scan), desc="Scanning", colour="cyan"))
 
     # Categorization
     malware = [r for r in results if r[1] == "MALWARE"]
@@ -173,11 +190,15 @@ def main():
         print(f"\n\033[91m🚨 DETECTED RANSOMWARE ({len(malware)}):\033[0m")
         for path, label, prob in malware[:20]:
             print(f"  [{float(prob)*100:5.1f}%] {os.path.basename(path)}")
+        if len(malware) > 20:
+            print(f"  ... and {len(malware)-20} more.")
 
     if suspicious:
         print(f"\n\033[93m⚠️  SUSPICIOUS FILES ({len(suspicious)}):\033[0m")
-        for path, label, prob in suspicious:
+        for path, label, prob in suspicious[:15]:
             print(f"  [{float(prob)*100:5.1f}%] {os.path.basename(path)}")
+        if len(suspicious) > 15:
+            print(f"  ... and {len(suspicious)-15} more.")
 
     if errors:
         print(f"\n\033[95m❌ ERRORS ({len(errors)}):\033[0m")
@@ -185,6 +206,9 @@ def main():
             print(f"  [{os.path.basename(path)}] -> {err}")
 
     # Summary
+    total_scanned = len(results)
+    threat_ratio = ((len(malware) + len(suspicious)) / total_scanned * 100) if total_scanned > 0 else 0
+
     print(f"\n{'='*70}")
     print(f"📊 FINAL SUMMARY REPORT")
     print(f"{'='*70}")
@@ -192,7 +216,7 @@ def main():
     print(f"⚠️  Suspicious     : {len(suspicious)}")
     print(f"🚨 Malware        : {len(malware)}")
     print(f"❌ Errors         : {len(errors)}")
-    print(f"📈 Overall Threat : {(len(malware)+len(suspicious))/len(results)*100:.1f}%")
+    print(f"📈 Overall Threat : {threat_ratio:.1f}%")
     print(f"{'='*70}")
 
     # Save CSV

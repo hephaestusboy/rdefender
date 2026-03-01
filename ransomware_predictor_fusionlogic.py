@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 from sklearn import set_config
 set_config(enable_metadata_routing=False)
 os.environ["PYTHONWARNINGS"] = "ignore::UserWarning:sklearn.utils.parallel"
-
+os.environ["OMP_NUM_THREADS"] = "1"
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -26,6 +26,8 @@ from dataset_cache import load_cache, save_cache, file_hash
 # IMPORT SCHEMA TO MAP SILVER BULLETS
 from feature_schema import FEATURE_SCHEMA
 
+total_cores = cpu_count()
+half_cores = max(1, total_cores // 2)
 # =========================================================
 # HYBRID STACKING: THE "SILVER BULLETS"
 # =========================================================
@@ -69,10 +71,10 @@ def build_dataset_incremental(malware_files, benign_files):
             todo.append((path, label))
 
     if todo:
-        print(f"⚡ Parallel Extraction: {len(todo)} files using {cpu_count()} cores...")
+        print(f"⚡ Parallel Extraction: {len(todo)} files using {half_cores} cores...")
         new_vectors = {}
         # Using ProcessPool for CPU-heavy feature extraction
-        with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
+        with ProcessPoolExecutor(max_workers=half_cores) as executor:
             futures = {executor.submit(extract_single_file, item): item for item in todo}
             for future in tqdm(as_completed(futures), total=len(todo), desc="Extracting", unit="file"):
                 path, vec, label, error = future.result()
@@ -96,7 +98,7 @@ def build_rf(y):
     weights = compute_class_weight(class_weight="balanced", classes=classes, y=y)
     return RandomForestClassifier(
         n_estimators=400, max_depth=20, min_samples_leaf=2,
-        class_weight=dict(zip(classes, weights)), n_jobs=-1, random_state=42
+        class_weight=dict(zip(classes, weights)), n_jobs=half_cores, random_state=42
     )
 
 def build_xgb(y):
@@ -104,7 +106,7 @@ def build_xgb(y):
     return XGBClassifier(
         n_estimators=300, max_depth=6, learning_rate=0.05,
         subsample=0.8, colsample_bytree=0.8, scale_pos_weight=neg / pos,
-        tree_method="hist", eval_metric="logloss", n_jobs=-1, random_state=42
+        tree_method="hist", eval_metric="logloss", n_jobs=half_cores, random_state=42
     )
 
 # =========================================================
@@ -175,7 +177,7 @@ def build_fusion_dataset_multicore(X, X1, X2, y):
     print(f"\n🧠 Building Hybrid Fusion Dataset Parallelly ({len(folds)} Folds)...")
     
     # Notice we now pass X into the delayed function
-    results = Parallel(n_jobs=-1)(
+    results = Parallel(n_jobs=half_cores)(
         delayed(train_fold)(f, X, X1, X2, y) for f in tqdm(folds, desc="Folds")
     )
     return np.vstack([r[0] for r in results]), np.hstack([r[1] for r in results])
@@ -228,7 +230,7 @@ if __name__ == "__main__":
         colsample_bytree=0.8,
         tree_method="hist",
         eval_metric="logloss",
-        n_jobs=-1,
+        n_jobs=half_cores,
         random_state=42
     )
 

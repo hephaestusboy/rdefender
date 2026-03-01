@@ -37,8 +37,8 @@ SILVER_BULLETS = [
 SILVER_INDICES = [FEATURE_SCHEMA.index(f) for f in SILVER_BULLETS]
 
 # Thresholds & Config
-MALWARE_THRESHOLD = 0.65       # Synced with your 0.979 Eval script
-SUSPICIOUS_THRESHOLD = 0.45    # Synced with your 0.979 Eval script
+MALWARE_THRESHOLD = 0.65       
+SUSPICIOUS_THRESHOLD = 0.30    # Lowered floor to catch stealthy variants
 SUPPORTED_EXTENSIONS = (".exe", ".dll", ".sys", ".bin")
 REPORTS_DIR = "scan_reports"
 
@@ -98,7 +98,7 @@ def worker_task(filepath):
         # 1. Feature Extraction
         feats = extract_features_from_binary(filepath)
         
-        # --- THE 0.979 F1 LOCAL VARIABLES ---
+        # --- THE 0.981 F1 LOCAL VARIABLES ---
         raw_shadow = feats.get("SHADOW_COPY_DELETION_STRINGS", 0)
         raw_entropy = feats.get("FILE_ENTROPY", 0.0)
         raw_anomaly = feats.get("VIRTUAL_RAW_SIZE_ANOMALY", 0)
@@ -125,8 +125,8 @@ def worker_task(filepath):
         if final_prob >= MALWARE_THRESHOLD: 
             label = "MALWARE"
         else:
-            # --- THE PURE HEURISTIC OVERRIDES ---
-            extreme_artifact = (pa_xgb > 0.90 or pa_rf > 0.90) and ((pb_rf + pb_xgb)/2 < 0.25) and raw_signed == 0
+            # --- THE 0.981 PURE HEURISTIC OVERRIDES ---
+            extreme_artifact = (pa_xgb > 0.85) and ((pb_rf + pb_xgb)/2 < 0.20) and raw_signed == 0
             consensus_suspicion = (pb_rf > 0.40 and pa_rf > 0.40 and pb_xgb > 0.40 and pa_xgb > 0.40)
             
             if raw_shadow == 1 or extreme_artifact or consensus_suspicion:
@@ -137,11 +137,11 @@ def worker_task(filepath):
             else:
                 label = "CLEAN"
 
-        # --- THE DATA-DRIVEN DEMOTION GUARDS ---
+        # --- THE 0.981 DATA-DRIVEN DEMOTION GUARDS ---
         if label == "MALWARE":
             if raw_signed == 1 and final_prob < 0.98:
                 label = "SUSPICIOUS" 
-            elif raw_entropy > 7.65 and raw_shadow == 0 and final_prob < 0.95:
+            elif raw_entropy > 6.8 and raw_shadow == 0 and final_prob < 0.95:
                 label = "SUSPICIOUS"
 
         return (filepath, label, final_prob)

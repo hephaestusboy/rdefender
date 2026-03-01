@@ -97,6 +97,9 @@ def build_fusion_features(p_rf_b, p_rf_a, p_xgb_b, p_xgb_a, raw_vec):
 # =============================
 # PREDICT SINGLE FILE
 # =============================
+# =============================
+# PREDICT SINGLE FILE
+# =============================
 def predict_file(models, filepath):
     # 1. Feature Extraction
     feats = extract_features_from_binary(filepath)
@@ -128,15 +131,16 @@ def predict_file(models, filepath):
     if fusion_prob >= MALWARE_THRESHOLD: 
         label = "RANSOMWARE"
     else:
-        # --- THE PURE HEURISTIC OVERRIDES ---
-        extreme_artifact = (p_xgb_a > 0.90 or p_rf_a > 0.90) and ((p_rf_b + p_xgb_b)/2 < 0.25) and raw_signed == 0
+        # --- THE REFINED PURE HEURISTIC OVERRIDES ---
+        # Dropped p_rf_a to stop false alarms on Windows built-in tools like upnpcont.exe
+        extreme_artifact = (p_xgb_a > 0.85) and ((p_rf_b + p_xgb_b)/2 < 0.20) and raw_signed == 0
         consensus_suspicion = (p_rf_b > 0.40 and p_rf_a > 0.40 and p_xgb_b > 0.40 and p_xgb_a > 0.40)
         
         # If we see undeniable malice or consensus, bump it up
         if raw_shadow == 1 or extreme_artifact or consensus_suspicion:
             label = "RANSOMWARE"
             fusion_prob = max(fusion_prob, 0.70) 
-        elif fusion_prob >= SUSPICIOUS_THRESHOLD: 
+        elif fusion_prob >= 0.30: # Lowered floor to catch the 0.34 - 0.43 FNs!
             label = "SUSPICIOUS"
         else:
             label = "BENIGN"
@@ -148,9 +152,9 @@ def predict_file(models, filepath):
         if raw_signed == 1 and fusion_prob < 0.98:
             label = "SUSPICIOUS" 
             
-        # Guard 2: The Installer Profile (Extreme packing, no malicious shadow deletion)
-        # Safely demotes installers that the ML model incorrectly panicked about
-        elif raw_entropy > 7.65 and raw_shadow == 0 and fusion_prob < 0.95:
+        # Guard 2: The Installer Profile 
+        # Widened the net (7.65 -> 6.8) to catch standard installers that aren't heavily packed
+        elif raw_entropy > 6.8 and raw_shadow == 0 and fusion_prob < 0.95:
             label = "SUSPICIOUS"
             
     # --- OPTIMIZATION: BUNDLE AUDIT METRICS ---

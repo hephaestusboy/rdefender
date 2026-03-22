@@ -1,0 +1,4 @@
+{
+    "malware_threshold": 0.725,
+    "suspicious_threshold": 0.60
+}

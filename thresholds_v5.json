@@ -1,0 +1,6 @@
+{
+  "malware_threshold": 0.53,
+  "suspicious_threshold": 0.38,
+  "fpr_budget": 0.01,
+  "val_recall": 0.981
+}

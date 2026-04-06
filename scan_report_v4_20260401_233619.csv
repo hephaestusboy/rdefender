@@ -1,0 +1,6 @@
+file,path,verdict,fusion_prob,avg_behavior,avg_artifact,entropy,shadow_del,signed,size_anomaly
+00202340108c101d59bbfb3daa4bbd6b4436c167e3c9734c07bfbdcb1402f746.exe,/home/heph/Documents/code/ransom/new/mb_dataset/samples/00202340108c101d59bbfb3daa4bbd6b4436c167e3c9734c07bfbdcb1402f746.exe,RANSOMWARE,0.9734,0.8603,0.9736,7.88,0,0,1
+1d9427b7739d112e11fefe58ece6d8d3758e10198d978c4cc812a10eaac0941c.dll,/home/heph/Documents/code/ransom/new/mb_dataset/samples/1d9427b7739d112e11fefe58ece6d8d3758e10198d978c4cc812a10eaac0941c.dll,RANSOMWARE,0.9989,0.9952,0.991,6.28,0,0,0
+1d2f1a8c2962658d14927983d05a370aae179f6d010fade109a6a5d918e9be84.dll,/home/heph/Documents/code/ransom/new/mb_dataset/samples/1d2f1a8c2962658d14927983d05a370aae179f6d010fade109a6a5d918e9be84.dll,RANSOMWARE,0.9989,0.9952,0.991,6.12,0,0,0
+139bf62f701613c60d5b18b5468aa32d555c147605c8a43465039f966b578cf2.dll,/home/heph/Documents/code/ransom/new/mb_dataset/samples/139bf62f701613c60d5b18b5468aa32d555c147605c8a43465039f966b578cf2.dll,RANSOMWARE,0.999,0.9935,0.991,6.41,0,0,0
+0e42e5927b3e7628d578f609700ed180d5dece5d0639a681b96f183e22c8ac8a.dll,/home/heph/Documents/code/ransom/new/mb_dataset/samples/0e42e5927b3e7628d578f609700ed180d5dece5d0639a681b96f183e22c8ac8a.dll,RANSOMWARE,0.9989,0.9952,0.991,6.45,0,0,0

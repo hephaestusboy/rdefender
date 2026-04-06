@@ -1,0 +1,2 @@
+file,fusion_prob,actual,pb_rf,pa_rf,pb_xgb,pa_xgb,avg_behavior,avg_artifact,entropy,size_anomaly,shadow_del,signed,disagreement
+31eb1de7e840a342fd468e558e5ab627bcb4c542a8fe01aec4d5ba01d539a0fc.exe,0.1899,MALWARE,0.6922,0.4425,0.4172,0.1482,0.5547,0.2953,6.13,0,0,0,0.2594

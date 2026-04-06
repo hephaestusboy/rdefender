@@ -1,0 +1,46 @@
+
+════════════════════════════════════════════════════════════════════════
+  R-DEFENDER  ENSEMBLE v4  —  MODEL PERFORMANCE REPORT
+  2026-04-02  19:20:25   threshold: RANSOMWARE≥0.69  SUSPICIOUS≥0.54
+════════════════════════════════════════════════════════════════════════
+  Samples   ransomware:   813   benign:  1998   (susp scored as: FN=4  FP=9)
+  Accuracy  0.9868   Precision 0.9641   F1 0.9776
+  Recall    0.9914 ✅  (target ≥0.99)   FPR 0.0151 
+
+  Confusion Matrix          FN breakdown (7 missed)
+  ┌──────────┬──────────┐   packed-evasive:4  behavior-only:1  artifact-only:1  fully-evasive:1
+  │ TP   806  │ FN     7 │   FP breakdown (30 false alarms)
+  │ FP    30  │ TN  1951 │   mixed:25  artifact-dominant:3  artifact-blind:2
+  └──────────┴──────────┘
+
+  Probability Distribution   (R = ransomware  B = benign)
+  Range         R  bar                         B  bar
+  ------------------------------------------------------------
+  0.0–0.1       0                           1828  ████████████████████
+  0.1–0.2       0                             69  
+  0.2–0.3       1                             25  
+  0.3–0.4       1                             16  
+  0.4–0.5       0                             12  
+  0.5–0.6       4                              5  
+  0.6–0.7       1                              5   ◄
+  0.7–0.8       6                             19  
+  0.8–0.9       9                              2  
+  0.9–1.0     791  █████████████████████       0  
+
+  Achievability (FPR ≤ 0.0111)
+
+  Next actions:
+    • packed-evasive FNs (4): add packed samples → --retarget
+    • fully-evasive FNs  (1): both models blind → add to training → --retarget
+    • artifact-only FNs  (1): behavior blind → check MODEL1 features
+    • behavior-only FNs  (1): artifact blind → check MODEL2 features
+    • artifact-dom FPs   (3): MODEL2 leakage → check artifact features
+    • mixed FPs          (25): add to benign training → --retarget
+════════════════════════════════════════════════════════════════════════
+  📄 FN audit → fn_audit_v4_20260402_192025.csv
+  📄 FP audit → fp_audit_v4_20260402_192025.csv
+
+
+
+
+

@@ -1,0 +1,4 @@
+file,fusion_prob,actual,verdict,pb_rf,pa_rf,pb_xgb,pa_xgb,avg_behavior,avg_artifact,entropy,size_anomaly,shadow_del,signed,num_imports,disagreement
+aedbddbf7494baaaf759a720d9cd17540d3c171b9cc52a02e0ef9a592bd9cd63.exe,0.1067,MALWARE,BENIGN,0.0797,0.0201,0.1393,0.0233,0.1095,0.0217,7.34,0,0,0,1,0.0878
+33c861023479ddcaea82f2daee9d0394f304d0c33ba210f4c3c53a93cf9a474c.exe,0.1211,MALWARE,BENIGN,0.0864,0.2189,0.0884,0.2094,0.0874,0.2141,7.84,0,0,0,1,0.1267
+9f40b69060a52731107baec84a0c0f8a1bfc1a62e8471b9cd69509aade9cb7f1.exe,0.1454,MALWARE,BENIGN,0.1172,0.2189,0.1537,0.2094,0.1355,0.2141,7.91,0,0,0,1,0.0787

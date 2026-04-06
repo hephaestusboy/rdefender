@@ -1,0 +1,2 @@
+file,fusion_prob,actual,verdict,pb_rf,pa_rf,pb_xgb,pa_xgb,avg_behavior,avg_artifact,entropy,size_anomaly,shadow_del,signed,num_imports,disagreement
+f53ac28e9b0ec8535333795ab9e0e52b17a77ad5eabc7b5172bd7e7aac41df12.exe,0.0129,MALWARE,BENIGN,0.0213,0.0039,0.036,0.0049,0.0287,0.0044,3.59,0,0,0,1,0.0243

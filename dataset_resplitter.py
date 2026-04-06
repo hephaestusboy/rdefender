@@ -14,7 +14,7 @@ TEST_MALWARE_DIR = "samples/test/ransomware"
 TEST_BENIGN_DIR = "samples/test/benign"
 
 TRAIN_RATIO = 0.87
-RANDOM_SEED = 666    
+RANDOM_SEED = 555
 
 def ensure_dir(path):
     if not os.path.exists(path):

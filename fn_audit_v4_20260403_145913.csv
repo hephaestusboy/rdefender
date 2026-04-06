@@ -1,0 +1,3 @@
+file,fusion_prob,actual,verdict,pb_rf,pa_rf,pb_xgb,pa_xgb,avg_behavior,avg_artifact,entropy,size_anomaly,shadow_del,signed,num_imports,disagreement
+546817e28100127124a0368050cbe6ecd1ea7a64c0bdfbef14823bb77404c42b_7619.exe,0.1467,MALWARE,BENIGN,0.088,0.2765,0.0657,0.2809,0.0768,0.2787,5.96,0,0,0,131,0.2019
+546817e28100127124a0368050cbe6ecd1ea7a64c0bdfbef14823bb77404c42b.exe,0.1467,MALWARE,BENIGN,0.088,0.2765,0.0657,0.2809,0.0768,0.2787,5.96,0,0,0,131,0.2019

@@ -1,6 +1,6 @@
 import joblib
 
-MODEL_PATH = "fusion_model.joblib"
+MODEL_PATH = "fusion_model_v4.joblib"
 
 # The exact 19 features constructed in 'build_fusion_features' and 'train_fold'
 FUSION_FEATURE_NAMES = [
